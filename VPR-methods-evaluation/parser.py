@@ -47,6 +47,13 @@ def parse_arguments():
         help="_",
     )
     parser.add_argument("--descriptors_dimension", type=int, default=None, help="_")
+    parser.add_argument(
+        "--faiss_metric",
+        type=str,
+        default="L2",
+        choices=["L2", "DP", "IP"],
+        help="Faiss index metric to use: 'L2' for IndexFlatL2 or 'DP'/'IP' for IndexFlatIP",
+    )
     parser.add_argument("--database_folder", type=str, required=True, help="path/to/database")
     parser.add_argument("--queries_folder", type=str, required=True, help="path/to/queries")
     parser.add_argument("--num_workers", type=int, default=4, help="_")
