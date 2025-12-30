@@ -152,13 +152,3 @@ def get_mixvpr(descriptors_dimension):
     model = model.eval()
 
     return model
-
-
-
-if __name__ == "__main__":
-    
-    x = torch.randn(1, 3, 320, 320)
-    model = get_mixvpr(512)
-    with torch.no_grad():
-        y = model(x)
-        print(y.shape)
