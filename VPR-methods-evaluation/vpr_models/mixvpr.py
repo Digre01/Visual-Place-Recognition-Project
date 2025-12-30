@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
+from torchvision.models import resnet50, ResNet50_Weights
 
 MODELS_INFO = {
     128: (
@@ -93,15 +94,13 @@ class MixVPR(nn.Module):
 ### Implement ResNet-50 here for MixVPR model,
 ### otherwise `self.backbone = ResNet()` will fail
 ### (academic purpose)
-class ResNet(torch.nn.Module):
-    def __init__(self, pretrained=False):
+class ResNet(nn.Module):
+    def __init__(self):
         super().__init__()
-        try:
-            resnet = torchvision.models.resnet50(pretrained=pretrained)
-        except TypeError:
-            resnet = torchvision.models.resnet50(weights=None)
-        
-        # take layers up to layer3 (output channels = 1024, spatial downsample x16)
+
+        weights = ResNet50_Weights.IMAGENET1K_V1
+        resnet = resnet50(weights=weights)
+
         self.conv1 = resnet.conv1
         self.bn1 = resnet.bn1
         self.relu = resnet.relu
@@ -109,6 +108,8 @@ class ResNet(torch.nn.Module):
         self.layer1 = resnet.layer1
         self.layer2 = resnet.layer2
         self.layer3 = resnet.layer3
+
+        self.out_channels = 1024
 
     def forward(self, x):
         x = self.conv1(x)
