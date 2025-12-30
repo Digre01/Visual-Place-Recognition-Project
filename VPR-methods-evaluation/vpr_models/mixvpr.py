@@ -94,31 +94,28 @@ class MixVPR(nn.Module):
 ### Implement ResNet-50 here for MixVPR model,
 ### otherwise `self.backbone = ResNet()` will fail
 ### (academic purpose)
+
 class ResNet(nn.Module):
     def __init__(self):
         super().__init__()
 
-        weights = ResNet50_Weights.IMAGENET1K_V1
-        resnet = resnet50(weights=weights)
+        self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
 
-        self.conv1 = resnet.conv1
-        self.bn1 = resnet.bn1
-        self.relu = resnet.relu
-        self.maxpool = resnet.maxpool
-        self.layer1 = resnet.layer1
-        self.layer2 = resnet.layer2
-        self.layer3 = resnet.layer3
-
-        self.out_channels = 1024
+        # RIMUOVI i layer che NON sono nel checkpoint MixVPR
+        self.model.layer4 = nn.Identity()
+        self.model.fc = nn.Identity()
+        self.model.avgpool = nn.Identity()
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
+        x = self.model.conv1(x)
+        x = self.model.bn1(x)
+        x = self.model.relu(x)
+        x = self.model.maxpool(x)
+
+        x = self.model.layer1(x)
+        x = self.model.layer2(x)
+        x = self.model.layer3(x)
+
         return x
 
 class MixVPRModel(torch.nn.Module):
@@ -155,3 +152,13 @@ def get_mixvpr(descriptors_dimension):
     model = model.eval()
 
     return model
+
+
+
+if __name__ == "__main__":
+    
+    x = torch.randn(1, 3, 320, 320)
+    model = get_mixvpr(512)
+    with torch.no_grad():
+        y = model(x)
+        print(y.shape)
