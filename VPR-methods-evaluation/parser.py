@@ -103,6 +103,13 @@ def parse_arguments():
         action="store_true",
         help="set to True if you want to save the data for uncertainty estimation",
     )
+    parser.add_argument(
+        "--apply_dark_prep",
+        type=bool,
+        default=False,
+        action="store_true",
+        help="Set to True to apply CLAHE+Gamma preprocessing to database images before evaluation",
+    )
     args = parser.parse_args()
 
     args.use_labels = not args.no_labels

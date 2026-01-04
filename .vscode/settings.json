@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./VPR-methods-evaluation/third_party/deep-image-retrieval"
+    ]
+}

@@ -1,6 +1,7 @@
 import pdb
 import numpy as np
 from PIL import Image, ImageOps
+import cv2
 import torchvision.transforms as tvf
 import random
 from math import ceil
@@ -42,6 +43,47 @@ class Identity (object):
     """
     def __call__(self, inp):
         return inp
+
+
+class CLAHE(object):
+    """Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) on the L channel.
+    Usage in transform string: "CLAHE(clip_limit=2.0, tile_grid_size=(8,8))"
+    """
+    def __init__(self, clip_limit=2.0, tile_grid_size=(8,8)):
+        self.clip_limit = clip_limit
+        self.tile_grid_size = tile_grid_size
+
+    def __call__(self, inp):
+        img = F.grab_img(inp)
+        arr = np.array(img)
+        lab = cv2.cvtColor(arr, cv2.COLOR_RGB2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=self.clip_limit, tileGridSize=self.tile_grid_size)
+        l2 = clahe.apply(l)
+        lab2 = cv2.merge((l2, a, b))
+        img_rgb = cv2.cvtColor(lab2, cv2.COLOR_LAB2RGB)
+        img_pil = Image.fromarray(img_rgb)
+        return F.update_img_and_labels(inp, img_pil, aff=(1,0,0,0,1,0))
+
+
+class AdjustGamma(object):
+    """Apply gamma correction. Usage: AdjustGamma(gamma=1.3)"""
+    def __init__(self, gamma=1.3):
+        self.gamma = float(gamma)
+        inv = 1.0 / self.gamma if self.gamma != 0 else 1.0
+        self.table = (np.array([((i / 255.0) ** inv) * 255 for i in range(256)])).astype('uint8')
+
+    def __call__(self, inp):
+        img = F.grab_img(inp)
+        arr = np.array(img)
+        # cv2.LUT applies the same lookup table per channel
+        try:
+            out = cv2.LUT(arr, self.table)
+        except Exception:
+            # fallback per-channel
+            out = np.stack([cv2.LUT(arr[:, :, c], self.table) for c in range(arr.shape[2])], axis=2)
+        img_pil = Image.fromarray(out)
+        return F.update_img_and_labels(inp, img_pil, aff=(1,0,0,0,1,0))
 
 
 class Pad(object):

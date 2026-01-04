@@ -14,6 +14,8 @@ from tqdm import tqdm
 import visualizations
 import vpr_models
 from test_dataset import TestDataset
+import dirtorch.utils.transforms as transforms
+
 
 
 def main(args):
@@ -33,14 +35,65 @@ def main(args):
 
     model = vpr_models.get_model(args.method, args.backbone, args.descriptors_dimension)
     model = model.eval().to(args.device)
+    # Optional: apply CLAHE + Gamma preprocessing to database and queries
+    if getattr(args, 'apply_dark_prep', False):
+        from PIL import Image
+        import os
+        import sys
+        from tqdm import tqdm
 
-    test_ds = TestDataset(
-        args.database_folder,
-        args.queries_folder,
-        positive_dist_threshold=args.positive_dist_threshold,
-        image_size=args.image_size,
-        use_labels=args.use_labels,
-    )
+        # Ensure the deep-image-retrieval package is importable
+        transforms_pkg_path = os.path.join(Path(__file__).parent, 'third_party', 'deep-image-retrieval')
+        if os.path.isdir(transforms_pkg_path) and transforms_pkg_path not in sys.path:
+            sys.path.insert(0, transforms_pkg_path)
+
+
+        def preprocess_folder(src_root, dst_root):
+            os.makedirs(dst_root, exist_ok=True)
+            clahe = transforms.CLAHE()
+            gamma = transforms.AdjustGamma(1.3)
+            for root, _, files in os.walk(src_root):
+                rel = os.path.relpath(root, src_root)
+                dst_dir = os.path.join(dst_root, rel) if rel != '.' else dst_root
+                os.makedirs(dst_dir, exist_ok=True)
+                for fname in files:
+                    if not fname.lower().endswith(('.jpg', '.jpeg', '.png')):
+                        continue
+                    src = os.path.join(root, fname)
+                    dst = os.path.join(dst_dir, fname)
+                    try:
+                        img = Image.open(src).convert('RGB')
+                    except Exception:
+                        continue
+                    img_dict = {'img': img}
+                    img2 = clahe(img_dict)['img']
+                    img2 = gamma({'img': img2})['img']
+                    img2.save(dst)
+
+        db_folder_orig = args.database_folder
+        q_folder_orig = args.queries_folder
+        db_folder = db_folder_orig + '_preprocessed'
+        q_folder = q_folder_orig + '_preprocessed'
+        logger.info(f"Preprocessing database images from {db_folder_orig} -> {db_folder}")
+        preprocess_folder(db_folder_orig, db_folder)
+        logger.info(f"Preprocessing query images from {q_folder_orig} -> {q_folder}")
+        preprocess_folder(q_folder_orig, q_folder)
+
+        test_ds = TestDataset(
+            db_folder,
+            q_folder,
+            positive_dist_threshold=args.positive_dist_threshold,
+            image_size=args.image_size,
+            use_labels=args.use_labels,
+        )
+    else:
+        test_ds = TestDataset(
+            args.database_folder,
+            args.queries_folder,
+            positive_dist_threshold=args.positive_dist_threshold,
+            image_size=args.image_size,
+            use_labels=args.use_labels,
+        )
     logger.info(f"Testing on {test_ds}")
 
     with torch.inference_mode():
