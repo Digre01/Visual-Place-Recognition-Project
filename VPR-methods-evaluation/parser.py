@@ -105,8 +105,6 @@ def parse_arguments():
     )
     parser.add_argument(
         "--apply_dark_prep",
-        type=bool,
-        default=False,
         action="store_true",
         help="Set to True to apply CLAHE+Gamma preprocessing to database images before evaluation",
     )
