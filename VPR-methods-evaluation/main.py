@@ -16,6 +16,10 @@ import vpr_models
 from test_dataset import TestDataset
 import dirtorch.utils.transforms as transforms
 
+from PIL import Image
+import os
+import sys
+from tqdm import tqdm
 
 
 def main(args):
@@ -35,12 +39,8 @@ def main(args):
 
     model = vpr_models.get_model(args.method, args.backbone, args.descriptors_dimension)
     model = model.eval().to(args.device)
-    # Optional: apply CLAHE + Gamma preprocessing to database and queries
+    # Optional: apply CLAHE + Gamma preprocessing to queries image
     if getattr(args, 'apply_dark_prep', False):
-        from PIL import Image
-        import os
-        import sys
-        from tqdm import tqdm
 
         # Ensure the deep-image-retrieval package is importable
         transforms_pkg_path = os.path.join(Path(__file__).parent, 'third_party', 'deep-image-retrieval')
@@ -72,15 +72,13 @@ def main(args):
 
         db_folder_orig = args.database_folder
         q_folder_orig = args.queries_folder
-        db_folder = db_folder_orig + '_preprocessed'
         q_folder = q_folder_orig + '_preprocessed'
-        logger.info(f"Preprocessing database images from {db_folder_orig} -> {db_folder}")
-        preprocess_folder(db_folder_orig, db_folder)
+   
         logger.info(f"Preprocessing query images from {q_folder_orig} -> {q_folder}")
         preprocess_folder(q_folder_orig, q_folder)
 
         test_ds = TestDataset(
-            db_folder,
+            args.database_folder,
             q_folder,
             positive_dist_threshold=args.positive_dist_threshold,
             image_size=args.image_size,

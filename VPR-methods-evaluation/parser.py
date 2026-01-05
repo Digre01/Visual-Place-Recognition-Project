@@ -106,11 +106,12 @@ def parse_arguments():
     parser.add_argument(
         "--apply_dark_prep",
         action="store_true",
-        help="Set to True to apply CLAHE+Gamma preprocessing to database images before evaluation",
+        help="Apply CLAHE + Gamma preprocessing to database and queries"
     )
     args = parser.parse_args()
 
     args.use_labels = not args.no_labels
+   
 
     if args.method == "netvlad":
         if args.backbone not in [None, "VGG16"]:
