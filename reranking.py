@@ -22,6 +22,14 @@ def parse_arguments():
         ),
     )
     parser.add_argument(
+        "--save-reranked-inliers-dir",
+        type=str,
+        default=None,
+        help=(
+            "if set, saves re-ranked .torch image-matching results to this directory (top-N reordered to match preds)"
+        ),
+    )
+    parser.add_argument(
         "--positive-dist-threshold",
         type=int,
         default=25,
@@ -46,6 +54,9 @@ def main(args):
     save_dir = Path(args.save_reranked_dir) if args.save_reranked_dir else None
     if save_dir is not None:
         save_dir.mkdir(parents=True, exist_ok=True)
+    inliers_save_dir = Path(args.save_reranked_inliers_dir) if getattr(args, "save_reranked_inliers_dir", None) else None
+    if inliers_save_dir is not None:
+        inliers_save_dir.mkdir(parents=True, exist_ok=True)
 
     txt_files = glob(os.path.join(preds_folder, "*.txt"))
     txt_files.sort(key=lambda x: int(Path(x).stem))
@@ -94,6 +105,21 @@ def main(args):
             out_path = save_dir / Path(txt_file_query).name
             with open(out_path, 'w') as f:
                 f.write("\n".join(new_lines))
+
+        # Optionally save the re-ranked inliers (.torch) to disk
+        if inliers_save_dir is not None:
+            # Reorder only top-N entries of the inliers results according to the same indices
+            if isinstance(query_results, (list, tuple)):
+                top_inliers = list(query_results[:num_preds])
+                tail_inliers = list(query_results[num_preds:])
+                reordered_top_inliers = [top_inliers[i] for i in indices.cpu().tolist()]
+                new_inliers_results = reordered_top_inliers + tail_inliers
+            else:
+                # If unexpected type, fall back to original object without modification
+                new_inliers_results = query_results
+
+            out_inliers_path = inliers_save_dir / Path(torch_file_query).name
+            torch.save(new_inliers_results, out_inliers_path)
         
         for i, n in enumerate(recall_values):
             if torch.any(geo_dists[:n] <= threshold):
