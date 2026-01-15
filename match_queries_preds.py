@@ -24,6 +24,9 @@ def parse_arguments():
     parser.add_argument("--device", type=str, default=get_default_device(), choices=["cpu", "cuda"])
     parser.add_argument("--im-size", type=int, default=512, help="resize img to im_size x im_size")
     parser.add_argument("--num-preds", type=int, default=20, help="number of predictions to match")
+    parser.add_argument("--start-query", type=int, default=-1, help="query to start from")
+    parser.add_argument("--num-queries", type=int, default=-1, help="number of queries")
+
     
     parser.add_argument("--adaptive-threshold", type=int, default=None, 
                         help="Se top-1 >= soglia, interrompe il matching")
@@ -35,24 +38,37 @@ def parse_arguments():
     return parser.parse_args()
 
 def main(args):
-    matcher = get_matcher(args.matcher, device=args.device)
+    device = args.device
+    matcher_name = args.matcher
+    img_size = args.im_size
+    num_preds = args.num_preds
+    matcher = get_matcher(matcher_name, device=device)
+    preds_folder = args.preds_dir
+    start_query = args.start_query
+    num_queries = args.num_queries
+
     output_folder = Path(args.preds_dir + f"_{args.matcher}") if args.out_dir is None else Path(args.out_dir)
     output_folder.mkdir(exist_ok=True, parents=True)
+
+    #load model
+    clf = joblib.load(args.logistic_model_path) if args.logistic_model_path else None
+
+    txt_files = glob(os.path.join(preds_folder, "*.txt"))
+    txt_files.sort(key=lambda x: int(Path(x).stem))
+
+    start_query = start_query if start_query >= 0 else 0
+    num_queries = num_queries if num_queries >= 0 else len(txt_files)
+
 
     #time saving track
     start_time = time.time()
     total_matches_possible = len(txt_files) * args.num_preds
     matches_executed = 0
-    
-    
-    #load model
-    clf = joblib.load(args.logistic_model_path) if args.logistic_model_path else None
 
-    txt_files = sorted(glob(os.path.join(args.preds_dir, "*.txt")), key=lambda x: int(Path(x).stem))
-
-    for txt_file in tqdm(txt_files):
+    for txt_file in tqdm(txt_files[start_query : start_query + num_queries]):
         out_file = output_folder.joinpath(f"{Path(txt_file).stem}.torch")
-        if out_file.exists(): continue
+        if out_file.exists(): 
+            continue
         
         results = []
         q_path, pred_paths = read_file_preds(txt_file)
@@ -61,7 +77,7 @@ def main(args):
         for i, pred_path in enumerate(pred_paths[:args.num_preds]):
             img1 = matcher.load_image(pred_path, resize=args.im_size)
             result = matcher(deepcopy(img0), img1)
-            result["all_desc0"] = result["all_desc1"] = None # Risparmio memoria
+            result["all_desc0"] = result["all_desc1"] = None 
             results.append(result)
             matches_executed += 1
 
