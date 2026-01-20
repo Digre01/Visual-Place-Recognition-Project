@@ -29,7 +29,7 @@ def main(args):
     total_matchings_possible = total_queries * args.num_preds
     matchings_actually_done = 0
 
-    print(f"Valutazione su {total_queries} query...")
+    print(f"Eval over {total_queries} query...")
 
     for txt_file_query in tqdm(txt_files):
         geo_dists_orig = torch.tensor(get_list_distances_from_preds(txt_file_query))[:args.num_preds]
@@ -74,6 +74,7 @@ def main(args):
     print(f"Adaptive Matching R@1:       {recalls_pct[0]:.2f}%")
     print(f"Computational cost saving:    {cost_saving:.2f}%")
     print("-" * 45)
+    print("OTHER DATA:")
     print("Recall Adattive:")
     for val, rec in zip(args.recall_values, recalls_pct):
         print(f" R@{val}: {rec:.2f}%")
