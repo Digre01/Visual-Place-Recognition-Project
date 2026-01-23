@@ -15,7 +15,6 @@ def main():
     args = parser.parse_args()
 
     data = []
-    # Ordiniamo i file per matchare i risultati
     txt_files = sorted(glob(os.path.join(args.preds_dir, "*.txt")))
     
     for txt_file in txt_files:
