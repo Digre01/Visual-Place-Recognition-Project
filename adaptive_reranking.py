@@ -74,11 +74,11 @@ def main(args):
     print(f"Adaptive Matching R@1:       {recalls_pct[0]:.2f}%")
     print(f"Computational cost saving:    {cost_saving:.2f}%")
     print("-" * 45)
-    print("OTHER DATA:")
-    print("Recall Adattive:")
-    for val, rec in zip(args.recall_values, recalls_pct):
-        print(f" R@{val}: {rec:.2f}%")
-    print("="*45)
+    #print("OTHER DATA:")
+    #print("Recall Adattive:")
+    #for val, rec in zip(args.recall_values, recalls_pct):
+    #    print(f" R@{val}: {rec:.2f}%")
+    #print("="*45)
 
 if __name__ == "__main__":
     main(parse_arguments())
