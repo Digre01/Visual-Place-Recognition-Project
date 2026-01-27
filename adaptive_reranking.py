@@ -8,10 +8,10 @@ from util import get_list_distances_from_preds
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--preds-dir", type=str, required=True, help="directory con le predizioni VPR (.txt)")
-    parser.add_argument("--inliers-dir", type=str, required=True, help="directory con i risultati del matching (.torch)")
-    parser.add_argument("--num-preds", type=int, default=20, help="numero massimo di candidati considerati")
-    parser.add_argument("--positive-dist-threshold", type=int, default=25, help="soglia in metri per un match positivo")
+    parser.add_argument("--preds-dir", type=str, required=True, help="directory with the VPR prediction (.txt)")
+    parser.add_argument("--inliers-dir", type=str, required=True, help="directory with the matching results (.torch)")
+    parser.add_argument("--num-preds", type=int, default=20, help="max candidate to be considered")
+    parser.add_argument("--positive-dist-threshold", type=int, default=25, help="max threshold for a positive match")
     parser.add_argument("--recall-values", type=int, nargs="+", default=[1, 5, 10, 20])
     return parser.parse_args()
 
@@ -29,7 +29,7 @@ def main(args):
     total_matchings_possible = total_queries * args.num_preds
     matchings_actually_done = 0
 
-    print(f"Eval over {total_queries} query...")
+    print(f"Evalation over {total_queries} query...")
 
     for txt_file_query in tqdm(txt_files):
         geo_dists_orig = torch.tensor(get_list_distances_from_preds(txt_file_query))[:args.num_preds]
@@ -68,17 +68,12 @@ def main(args):
     recalls_pct = (recalls / total_queries) * 100
     
     print("\n" + "="*45)
-    print(f"RESULTS RE-RANKING ADAPTIVE")
+    print(f"RECALL RESULTS AFTER ADAPTIVE-MATCHING")
     print("="*45)
     print(f"Baseline (Retrieval-only) R@1: {retrieval_r1_pct:.2f}%")
     print(f"Adaptive Matching R@1:       {recalls_pct[0]:.2f}%")
     print(f"Computational cost saving:    {cost_saving:.2f}%")
     print("-" * 45)
-    print("OTHER DATA:")
-    print("Recall Adattive:")
-    for val, rec in zip(args.recall_values, recalls_pct):
-        print(f" R@{val}: {rec:.2f}%")
-    print("="*45)
 
 if __name__ == "__main__":
     main(parse_arguments())

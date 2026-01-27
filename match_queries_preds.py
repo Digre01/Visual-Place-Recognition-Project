@@ -3,7 +3,7 @@ import sys
 import argparse
 import torch
 import time
-import joblib  # Per caricare il modello di regressione logistica
+import joblib 
 from glob import glob
 from tqdm import tqdm
 from pathlib import Path
@@ -29,11 +29,11 @@ def parse_arguments():
 
     
     parser.add_argument("--adaptive-threshold", type=int, default=None, 
-                        help="Se top-1 >= soglia, interrompe il matching")
+                        help="if top-1 >= threshold, stop")
     parser.add_argument("--logistic-model-path", type=str, default=None, 
-                        help="Percorso al modello .joblib del regressore logistico")
+                        help="path to .joblib of the logistic model")
     parser.add_argument("--logistic-prob-threshold", type=float, default=0.5, 
-                        help="Soglia di probabilità per il regressore logistico")
+                        help="")
 
     return parser.parse_args()
 

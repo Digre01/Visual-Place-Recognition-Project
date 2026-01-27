@@ -19,24 +19,24 @@ def main():
     
     for txt_file in txt_files:
         query_id = Path(txt_file).stem
-        # Distanze reali (Ground Truth)
+        
+        #ground truth
         dists = get_list_distances_from_preds(txt_file)
         
-        # Risultati del matching
+        #matching result
         torch_file = Path(args.inliers_dir) / f"{query_id}.torch"
         if not torch_file.exists(): continue
         
-        # Carichiamo i dati (usiamo il primo match per il training del Top-1 exit)
         results = torch.load(torch_file, weights_only=False)
         if len(results) > 0:
-            num_inliers = results[0]['num_inliers']
-            # Etichetta 1 se la distanza geografica è <= 25 metri
-            label = 1 if dists[0] <= 25 else 0
+            num_inliers = results[0]['num_inliers'] #save only the Top-1
+            
+            label = 1 if dists[0] <= 25 else 0 #assign 1 if the Top-1 is label correctly
             data.append([num_inliers, label])
             
     df = pd.DataFrame(data, columns=['num_inliers', 'label'])
     df.to_csv(args.output_csv, index=False)
-    print(f"Dataset creato con {len(df)} campioni -> {args.output_csv}")
+    print(f"Dataset created with {len(df)} values -> {args.output_csv}")
 
 if __name__ == "__main__":
     main()
