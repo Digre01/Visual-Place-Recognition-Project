@@ -52,6 +52,7 @@ def main(args):
     threshold = args.positive_dist_threshold
     recall_values = args.recall_values
     save_dir = Path(args.save_reranked_dir) if args.save_reranked_dir else None
+    
     if save_dir is not None:
         save_dir.mkdir(parents=True, exist_ok=True)
     inliers_save_dir = Path(args.save_reranked_inliers_dir) if getattr(args, "save_reranked_inliers_dir", None) else None
@@ -69,10 +70,15 @@ def main(args):
         torch_file_query = inliers_folder.joinpath(Path(txt_file_query).name.replace('txt', 'torch'))
         query_results = torch.load(torch_file_query, weights_only=False)
         query_db_inliers = torch.zeros(num_preds, dtype=torch.float32)
+        
         for i in range(num_preds):
             query_db_inliers[i] = query_results[i]['num_inliers']
         query_db_inliers, indices = torch.sort(query_db_inliers, descending=True)
         geo_dists = geo_dists[indices]
+
+        # Print the number of inliers for the top-1 match
+        top1_inliers = int(query_db_inliers[0].item()) if query_db_inliers.numel() > 0 else 0
+        print(f"Query {Path(txt_file_query).stem}: top-1 inliers = {top1_inliers}")
 
         # Optionally save the re-ranked predictions to disk
         if save_dir is not None:

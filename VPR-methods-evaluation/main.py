@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import faiss
+import time
 from loguru import logger
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Subset
@@ -84,7 +85,20 @@ def main(args):
     del database_descriptors, all_descriptors
 
     logger.debug("Calculating recalls")
+
+    start_retrieval_time = time.time()
+    
     distances, predictions = faiss_index.search(queries_descriptors, max(args.recall_values))
+    
+    end_retrieval_time = time.time()
+    
+    #retrival time
+    total_retrieval_time = end_retrieval_time - start_retrieval_time
+    avg_retrieval_time = total_retrieval_time / test_ds.num_queries
+    
+    logger.info(f"Total retrieval time for {test_ds.num_queries} queries: {total_retrieval_time:.4f}s")
+    logger.info(f"Average retrieval time per query: {avg_retrieval_time*1000:.2f}ms")
+
 
     # For each query, check if the predictions are correct
     if args.use_labels:
